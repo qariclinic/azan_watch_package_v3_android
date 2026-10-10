@@ -1,0 +1,59 @@
+{
+  "name": "azan-watch-electron",
+  "version": "2.1.0",
+  "description": "Azan Watch - prayer times, Hijri/Shamsi dates and azan alerts (مفتی شعیب خان آلائی)",
+  "main": "main.js",
+  "author": "Mufti Shuaib Khan Alai",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --publish never",
+    "dist:win": "electron-builder --win --x64 --publish never",
+    "dist:linux": "electron-builder --linux --x64 --publish never",
+    "android:prepare": "bash scripts/prepare-android.sh",
+    "android:build": "cd android && gradlew assembleDebug"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3",
+    "@capacitor/cli": "^6.1.2",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/android": "^6.1.2"
+  },
+  "build": {
+    "appId": "com.shuaib.azanwatch",
+    "productName": "AzanWatch",
+    "files": [
+      "azan-watch.html",
+      "adhan.js",
+      "main.js",
+      "preload.js",
+      "icon*.png",
+      "icon.svg",
+      "azan_alert.wav",
+      "manifest.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "icon-512.png"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "icon-512.png",
+      "category": "Utility"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

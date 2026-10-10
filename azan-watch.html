@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>واچ — Azan Watch (مفتی شعیب خان آلائی)</title>
+<meta name="theme-color" content="#0b3a5b">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg1:#0b3a5b;--bg2:#0f172a;--fg:#fff;--card:rgba(255,255,255,.06);--accent:#ffcc00}
+*{box-sizing:border-box;font-family:'Noto Nastaliq Urdu','Noto Naskh Arabic','Segoe UI',Tahoma,sans-serif}
+html,body{min-height:100%;margin:0;background:linear-gradient(135deg,var(--bg2),var(--bg1)) fixed;color:var(--fg)}
+.app{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px}
+.watch{width:400px;max-width:98vw;border-radius:16px;padding:16px;background:rgba(255,255,255,.04);box-shadow:0 10px 30px rgba(2,6,23,.6)}
+.top,.dates,.row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.small{font-size:12px}.title{font-size:13px}
+.time{font-size:46px;text-align:center;font-weight:700;margin:6px 0 2px;direction:ltr}
+.next{text-align:center;background:var(--card);border-radius:10px;padding:8px;margin-top:8px;font-size:14px}
+.next b{color:var(--accent)}.cd{font-size:22px;direction:ltr;display:block}
+.dates{margin-top:8px;font-size:13px}
+.prayers{margin-top:10px;border-radius:10px;padding:6px;background:var(--card)}
+.prayer{display:flex;justify-content:space-between;padding:8px 8px;border-bottom:1px dashed rgba(255,255,255,.1);border-radius:6px}
+.prayer:last-child{border:0}.prayer.cur{background:rgba(255,204,0,.18);font-weight:700}.prayer.nx{outline:1px solid var(--accent)}
+.prayer span:last-child{direction:ltr}
+.btn,select,input[type=number]{flex:1;padding:8px;border-radius:8px;background:rgba(255,255,255,.07);color:inherit;border:1px solid rgba(255,255,255,.12);text-align:center;cursor:pointer;font-size:12px}
+select option{color:#000}
+.panel{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+details{margin-top:10px;background:var(--card);border-radius:10px;padding:8px}summary{cursor:pointer;font-size:13px}
+.off{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:6px 0}.off label{font-size:11px;text-align:center}.off input{width:100%;padding:4px}
+input[type=color]{height:38px;width:100%;border:0;border-radius:8px;padding:0}
+.brand{margin-top:12px;text-align:center;font-size:14px}footer{font-size:11px;text-align:center;margin-top:6px;opacity:.75}
+body.kiosk .panel,body.kiosk details,body.kiosk footer{display:none}body.kiosk .watch{width:min(96vw,720px)}body.kiosk .time{font-size:min(18vw,110px)}
+</style>
+</head>
+<body>
+<div class="app"><div class="watch">
+  <div class="top"><div class="title">Azan Watch • واچ</div><div id="loc" class="small">مقام: --</div></div>
+  <div class="time" id="clock">--:--:--</div>
+  <div class="next">اگلی نماز: <b id="nxName">--</b><span class="cd" id="nxCd">--:--:--</span><span class="small" id="iq"></span></div>
+  <div class="dates"><div id="hijri">ہجری: --</div><div id="shamsi">شمسی: --</div></div>
+  <div class="prayers" id="prayers"></div>
+
+  <div class="panel">
+    <div class="row">
+      <select id="city"></select>
+      <div id="gps" class="btn">📍 مقام حاصل کریں</div>
+    </div>
+    <div class="row">
+      <select id="method">
+        <option value="Karachi">کراچی (پاکستان)</option><option value="MuslimWorldLeague">Muslim World League</option>
+        <option value="NorthAmerica">ISNA</option><option value="Egyptian">Egypt</option>
+        <option value="UmmAlQura">اُم القریٰ</option><option value="Tehran">Tehran</option><option value="Dubai">Dubai</option>
+      </select>
+      <select id="madhab"><option value="Hanafi">عصر: حنفی</option><option value="Shafi">عصر: شافعی/جمہور</option></select>
+    </div>
+    <div class="row">
+      <div id="kioskBtn" class="btn">🖥️ مسجد ڈسپلے</div>
+      <div id="testBtn" class="btn">🔊 آواز ٹیسٹ</div>
+      <div id="stopBtn" class="btn">⏹ بند</div>
+    </div>
+  </div>
+
+  <details><summary>⚙️ ترتیبات</summary>
+    <div class="small">اذان سے پہلے/بعد منٹ ایڈجسٹمنٹ (فجر، ظہر، عصر، مغرب، عشاء):</div>
+    <div class="off" id="offs"></div>
+    <div class="row small"><label>اقامت (منٹ بعد) <input type="number" id="iqamah" min="0" max="60"></label>
+      <label>ہجری تاریخ ± دن <input type="number" id="hOff" min="-3" max="3"></label></div>
+    <div class="row" style="margin-top:6px"><select id="fmt"><option value="24">24 گھنٹے</option><option value="12">12 گھنٹے</option></select>
+      <select id="alertMode"><option value="azan">اذان بجائیں</option><option value="off">آواز بند</option></select></div>
+    <div class="row" style="margin-top:6px"><input type="file" id="azanFile" accept="audio/*" class="small"><div id="resetSnd" class="btn">ڈیفالٹ آواز</div></div>
+    <div class="row" style="margin-top:6px"><label class="small">آواز <input type="range" id="vol" min="0" max="1" step=".05" value="1"></label></div>
+    <div class="row" style="margin-top:6px"><input type="color" id="c1"><input type="color" id="c2"></div>
+    <div class="row" style="margin-top:6px"><div id="notif" class="btn">🔔 نوٹیفکیشن</div><div id="installBtn" class="btn" style="display:none">⬇️ انسٹال</div></div>
+  </details>
+
+  <div class="brand">مفتی شعیب خان آلائی</div>
+  <footer>نوٹ: اوقات فلکیاتی حساب سے ہیں؛ مقامی مسجد کے جنتری سے تصدیق کر لیں۔ اذان کی آواز کے لیے صفحے پر ایک بار کلک ضروری ہے۔</footer>
+  <audio id="aud" preload="auto"></audio>
+</div></div>
+
+<script src="adhan.js"></script>
+<script>
+const $=id=>document.getElementById(id),two=n=>String(n).padStart(2,'0');
+const KEYS=['fajr','dhuhr','asr','maghrib','isha'],ALL=['fajr','sunrise','dhuhr','asr','maghrib','isha'];
+const NAMES={fajr:'فجر',sunrise:'طلوعِ آفتاب',dhuhr:'ظہر',asr:'عصر',maghrib:'مغرب',isha:'عشاء'};
+const CITIES={'کراچی':[24.8607,67.0011],'لاہور':[31.5497,74.3436],'اسلام آباد':[33.6844,73.0479],'پشاور':[34.0151,71.5249],'بٹگرام':[34.6776,72.9876],'کوئٹہ':[30.1798,66.975],'ملتان':[30.1575,71.5249],'فیصل آباد':[31.4504,73.135],'مکہ مکرمہ':[21.4225,39.8262],'مدینہ منورہ':[24.4672,39.6024]};
+const HM=['محرم','صفر','ربیع الاول','ربیع الثانی','جمادی الاول','جمادی الثانی','رجب','شعبان','رمضان','شوال','ذوالقعدہ','ذوالحجہ'];
+const PM=['فروردین','اردیبہشت','خرداد','تیر','مرداد','شہریور','مہر','آبان','آذر','دی','بہمن','اسفند'];
+const DEF={city:'کراچی',lat:24.8607,lng:67.0011,method:'Karachi',madhab:'Hanafi',off:[0,0,0,0,0],iqamah:15,hOff:0,fmt:'24',alertMode:'azan',vol:1,c1:'#0b3a5b',c2:'#0f172a'};
+let S=Object.assign({},DEF);try{Object.assign(S,JSON.parse(localStorage.getItem('aw')||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem('aw',JSON.stringify(S))}catch(e){}};
+
+// ---- prayer times
+let T={},TN={},dayKey='';
+function calc(date){
+  const p=adhan.CalculationMethod[S.method]();p.madhab=adhan[ 'Madhab'][S.madhab];
+  const pt=new adhan.PrayerTimes(new adhan.Coordinates(S.lat,S.lng),date,p),o={};
+  ALL.forEach(k=>{const i=KEYS.indexOf(k);o[k]=new Date(pt[k].getTime()+(i>=0?S.off[i]:0)*60000)});return o;
+}
+function fmt(d){let h=d.getHours(),m=two(d.getMinutes());if(S.fmt==='12'){const s=h>=12?'PM':'AM';h=h%12||12;return h+':'+m+' '+s}return two(h)+':'+m}
+function build(){
+  const now=new Date(),t=new Date(now);t.setDate(t.getDate()+1);
+  T=calc(now);TN=calc(t);dayKey=now.toDateString();
+  $('prayers').innerHTML=ALL.map(k=>`<div class="prayer" id="p_${k}"><span>${k==='dhuhr'&&now.getDay()===5?'جمعہ / ظہر':NAMES[k]}</span><span>${fmt(T[k])}</span></div>`).join('');
+  $('loc').textContent='مقام: '+(S.city||S.lat.toFixed(2)+','+S.lng.toFixed(2));
+  dates();
+}
+
+// ---- dates (Intl first, formula fallback)
+function part(cal,d,type){try{return +new Intl.DateTimeFormat('en-u-ca-'+cal+'-nu-latn',{day:'numeric',month:'numeric',year:'numeric'}).formatToParts(d).find(x=>x.type===type).value}catch(e){return null}}
+function dates(){
+  const d=new Date();if(T.maghrib&&d>=T.maghrib)d.setDate(d.getDate()+1); // ہجری دن مغرب سے بدلتا ہے
+  const hd=new Date(d);hd.setDate(hd.getDate()+(+S.hOff||0));
+  const hy=part('islamic-umalqura',hd,'year'),hm=part('islamic-umalqura',hd,'month'),hdd=part('islamic-umalqura',hd,'day');
+  $('hijri').textContent=hy?`ہجری: ${hdd} ${HM[hm-1]} ${hy}`:'ہجری: --';
+  const py=part('persian',new Date(),'year'),pm=part('persian',new Date(),'month'),pd=part('persian',new Date(),'day');
+  $('shamsi').textContent=py?`شمسی: ${pd} ${PM[pm-1]} ${py}`:'شمسی: --';
+}
+
+// ---- tick: clock, next prayer, alerts
+let fired={};
+function tick(){
+  const now=new Date();$('clock').textContent=fmt2(now);
+  if(now.toDateString()!==dayKey)build();
+  let nx=null,cur=null;
+  for(const k of ALL){if(T[k]<=now)cur=k;else if(!nx){nx=[k,T[k]]}}
+  if(!nx)nx=['fajr',TN.fajr];
+  ALL.forEach(k=>{const e=$('p_'+k);if(e)e.className='prayer'+(k===cur?' cur':'')+(k===nx[0]?' nx':'')});
+  $('nxName').textContent=NAMES[nx[0]];
+  const s=Math.max(0,Math.round((nx[1]-now)/1000));$('nxCd').textContent=two(Math.floor(s/3600))+':'+two(Math.floor(s%3600/60))+':'+two(s%60);
+  // اقامت
+  let iq='';if(KEYS.includes(cur)){const left=Math.round((T[cur].getTime()+S.iqamah*60000-now)/1000);if(S.iqamah>0&&left>0)iq=`اقامت میں ${two(Math.floor(left/60))}:${two(left%60)}`}
+  $('iq').textContent=iq;
+  // اذان (ہر نماز صرف ایک بار، طلوع پر نہیں)
+  for(const k of KEYS){const diff=now-T[k],id=dayKey+k;if(diff>=0&&diff<60000&&!fired[id]){fired[id]=1;onAzan(k)}}
+}
+const fmt2=d=>two(d.getHours())+':'+two(d.getMinutes())+':'+two(d.getSeconds());
+
+// ---- audio (custom sound persisted in IndexedDB)
+const aud=$('aud');let objUrl=null;
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('aw',1);r.onupgradeneeded=()=>r.result.createObjectStore('s');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function idbSet(v){try{const db=await idb();const tx=db.transaction('s','readwrite');v?tx.objectStore('s').put(v,'azan'):tx.objectStore('s').delete('azan')}catch(e){}}
+async function idbGet(){try{const db=await idb();return await new Promise(r=>{const q=db.transaction('s').objectStore('s').get('azan');q.onsuccess=()=>r(q.result);q.onerror=()=>r(null)})}catch(e){return null}}
+function setSrc(blob){if(objUrl)URL.revokeObjectURL(objUrl);objUrl=null;if(blob){objUrl=URL.createObjectURL(blob);aud.src=objUrl}else aud.src='azan_alert.wav';aud.load()}
+$('azanFile').onchange=e=>{const f=e.target.files[0];if(!f)return;setSrc(f);idbSet(f)};
+$('resetSnd').onclick=()=>{setSrc(null);idbSet(null)};
+function play(){aud.volume=S.vol;aud.currentTime=0;aud.play().catch(()=>beepSeq())}
+function beep(ms){try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.frequency.value=600;g.gain.value=.08*S.vol;o.connect(g);g.connect(c.destination);o.start();setTimeout(()=>{o.stop();c.close()},ms)}catch(e){}}
+function beepSeq(){beep(300);setTimeout(()=>beep(300),400);setTimeout(()=>beep(400),900)}
+function onAzan(k){
+  if(S.alertMode==='azan')play();
+  if('Notification' in window&&Notification.permission==='granted'){try{new Notification('Azan Watch',{body:'وقتِ '+NAMES[k],icon:'icon-192.png'})}catch(e){}}
+}
+$('testBtn').onclick=play;$('stopBtn').onclick=()=>aud.pause();
+$('notif').onclick=()=>{if(!('Notification' in window))return alert('یہ براؤزر نوٹیفکیشن سپورٹ نہیں کرتا');Notification.requestPermission().then(p=>alert(p==='granted'?'نوٹیفکیشن فعال':'اجازت نہیں ملی'))};
+
+// ---- settings UI
+Object.keys(CITIES).forEach(c=>$('city').add(new Option(c,c)));$('city').add(new Option('GPS / دستی','')); 
+function ui(){
+  $('city').value=S.city;$('method').value=S.method;$('madhab').value=S.madhab;$('iqamah').value=S.iqamah;$('hOff').value=S.hOff;
+  $('fmt').value=S.fmt;$('alertMode').value=S.alertMode;$('vol').value=S.vol;$('c1').value=S.c1;$('c2').value=S.c2;
+  $('offs').innerHTML=KEYS.map((k,i)=>`<label>${NAMES[k]}<input type="number" data-i="${i}" value="${S.off[i]}" min="-30" max="30"></label>`).join('');
+  $('offs').querySelectorAll('input').forEach(el=>el.onchange=()=>{S.off[+el.dataset.i]=+el.value||0;save();build()});
+  colors();
+}
+function colors(){document.documentElement.style.setProperty('--bg1',S.c1);document.documentElement.style.setProperty('--bg2',S.c2)}
+const bind=(id,key,rebuild,num)=>$(id).addEventListener('change',e=>{S[key]=num?+e.target.value:e.target.value;save();if(rebuild)build()});
+bind('method','method',1);bind('madhab','madhab',1);bind('iqamah','iqamah',0,1);bind('hOff','hOff',1,1);bind('fmt','fmt',1);bind('alertMode','alertMode');bind('vol','vol',0,1);
+$('c1').oninput=e=>{S.c1=e.target.value;colors();save()};$('c2').oninput=e=>{S.c2=e.target.value;colors();save()};
+$('city').onchange=e=>{const c=e.target.value;if(c){S.city=c;[S.lat,S.lng]=CITIES[c]}else S.city='';save();build()};
+$('gps').onclick=()=>{if(!navigator.geolocation)return alert('براؤزر مقام کی حمایت نہیں کرتا');
+  navigator.geolocation.getCurrentPosition(p=>{S.lat=p.coords.latitude;S.lng=p.coords.longitude;S.city='';$('city').value='';save();build()},e=>alert('مقام حاصل نہیں ہوا: '+e.message),{timeout:15000})};
+
+// ---- kiosk / wake lock / PWA
+let wl=null;async function lock(){try{if('wakeLock' in navigator)wl=await navigator.wakeLock.request('screen')}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&document.body.classList.contains('kiosk'))lock()});
+$('kioskBtn').onclick=()=>{document.body.classList.add('kiosk');lock();document.documentElement.requestFullscreen?.().catch(()=>{})};
+document.addEventListener('dblclick',()=>{if(document.body.classList.contains('kiosk')){document.body.classList.remove('kiosk');wl&&wl.release();document.fullscreenElement&&document.exitFullscreen()}});
+let dp=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;$('installBtn').style.display=''});
+$('installBtn').onclick=async()=>{if(dp){dp.prompt();await dp.userChoice;dp=null;$('installBtn').style.display='none'}};
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+
+// ---- init
+ui();build();setSrc(null);idbGet().then(b=>b&&setSrc(b));setInterval(tick,1000);tick();
+</script>
+</body>
+</html>
